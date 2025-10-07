@@ -3,11 +3,6 @@ import streamlit as st
 import pandas as pd
 import time
 from pathlib import Path
-import subprocess
-import sys
-
-# --- Instala os navegadores do Playwright ---
-#subprocess.run([sys.executable, "-m", "playwright", "install"], check=True)
 
 # --- Agora sim podemos importar o Playwright ---
 from playwright.sync_api import sync_playwright
