@@ -1,51 +1,32 @@
-# app.py
 import streamlit as st
 import pandas as pd
 import time
-from pathlib import Path
-
-# --- Agora sim podemos importar o Playwright ---
 from playwright.sync_api import sync_playwright
 
-st.set_page_config(page_title="ValeFormsWeb", layout="wide")
-st.title("💻 ValeForms Web - Automatização de Formulários")
+st.set_page_config(page_title="ValeForms Web", layout="wide")
 
-# --- Upload de CSV ---
-uploaded_file = st.file_uploader("Selecione o arquivo CSV", type=["csv"])
+st.title("ValeForms Web")
+
+# Upload de arquivos
+uploaded_file = st.file_uploader("Escolha um arquivo CSV ou Excel", type=["csv", "xlsx"])
 
 if uploaded_file:
-    # Lê CSV
-    try:
+    # Leitura do arquivo
+    if uploaded_file.name.endswith(".csv"):
         df = pd.read_csv(uploaded_file)
-        st.success("Arquivo carregado com sucesso!")
-        st.dataframe(df.head())
-    except Exception as e:
-        st.error(f"Erro ao ler o CSV: {e}")
+    else:
+        df = pd.read_excel(uploaded_file)
+    
+    st.write("Dados carregados:")
+    st.dataframe(df)
 
-    # Botão para iniciar o preenchimento
-    if st.button("Iniciar preenchimento"):
-        with st.spinner("Executando preenchimento..."):
-            total = len(df)
-            progresso_bar = st.progress(0)
-
-            # Inicializa Playwright
+    # Aqui você pode colocar a integração com Playwright
+    if st.button("Processar Formulário"):
+        with st.spinner("Executando Playwright..."):
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=False)  # Headless=True se quiser rodar sem abrir navegador
+                browser = p.chromium.launch(headless=True)
                 page = browser.new_page()
-
-                for i, row in df.iterrows():
-                    # --- Aqui você coloca o seu código de preenchimento ---
-                    # Exemplo genérico:
-                    matricula = row.get("Matricula", "")
-                    nome = row.get("Nome", "")
-                    st.write(f"Preenchendo: {matricula} - {nome}")
-                    
-                    # Simula tempo de preenchimento
-                    time.sleep(1)
-
-                    # Atualiza barra de progresso
-                    progresso_bar.progress(int(((i + 1) / total) * 100))
-
+                # Coloque aqui o código do Playwright para preencher os formulários
+                time.sleep(2)
                 browser.close()
-
-            st.success("Preenchimento concluído!")
+            st.success("Formulário processado com sucesso!")

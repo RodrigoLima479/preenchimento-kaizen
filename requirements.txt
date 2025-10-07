@@ -1,3 +1,4 @@
 streamlit
 pandas
-playwright==1.43.0   # ou a versão que você estava usando
+playwright
+openpyxl   # necessário para Excel
