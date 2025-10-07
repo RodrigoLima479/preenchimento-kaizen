@@ -1,4 +1,3 @@
 streamlit
-playwright
 pandas
-openpyxl
+playwright==1.43.0   # ou a versão que você estava usando
