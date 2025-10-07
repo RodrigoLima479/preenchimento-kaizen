@@ -3,73 +3,54 @@ import streamlit as st
 import pandas as pd
 import time
 from pathlib import Path
+import subprocess
+import sys
+
+# --- Instala os navegadores do Playwright ---
+subprocess.run([sys.executable, "-m", "playwright", "install"], check=True)
+
+# --- Agora sim podemos importar o Playwright ---
 from playwright.sync_api import sync_playwright
 
-# --- Configurações da página ---
-st.set_page_config(page_title="Preenchedor Kaizen", layout="wide")
+st.set_page_config(page_title="ValeFormsWeb", layout="wide")
+st.title("💻 ValeForms Web - Automatização de Formulários")
 
-st.title("📝 Preenchedor Automático de Formulários Kaizen")
-st.write("Faça upload do seu arquivo CSV ou XLSX e automatize o preenchimento.")
+# --- Upload de CSV ---
+uploaded_file = st.file_uploader("Selecione o arquivo CSV", type=["csv"])
 
-# --- Upload de arquivo ---
-uploaded_file = st.file_uploader("Selecione CSV ou XLSX", type=["csv", "xlsx"])
-dados = None
-if uploaded_file is not None:
+if uploaded_file:
+    # Lê CSV
     try:
-        ext = Path(uploaded_file.name).suffix.lower()
-        if ext in [".xlsx", ".xls"]:
-            dados = pd.read_excel(uploaded_file)
-        else:
-            dados = pd.read_csv(uploaded_file)
-        st.success(f"Arquivo carregado: {uploaded_file.name} | {len(dados)} registros")
+        df = pd.read_csv(uploaded_file)
+        st.success("Arquivo carregado com sucesso!")
+        st.dataframe(df.head())
     except Exception as e:
-        st.error(f"Falha ao ler arquivo: {e}")
+        st.error(f"Erro ao ler o CSV: {e}")
 
-# --- Log e progresso ---
-log_box = st.empty()
-progress_bar = st.progress(0)
+    # Botão para iniciar o preenchimento
+    if st.button("Iniciar preenchimento"):
+        with st.spinner("Executando preenchimento..."):
+            total = len(df)
+            progresso_bar = st.progress(0)
 
-def log(msg):
-    log_box.text_area("📜 Log de Execução", value=msg, height=300)
+            # Inicializa Playwright
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=False)  # Headless=True se quiser rodar sem abrir navegador
+                page = browser.new_page()
 
-# --- Funções Playwright ---
-def esperar_e_clicar(locator, timeout=5000):
-    locator.wait_for(state="visible", timeout=timeout)
-    locator.click()
+                for i, row in df.iterrows():
+                    # --- Aqui você coloca o seu código de preenchimento ---
+                    # Exemplo genérico:
+                    matricula = row.get("Matricula", "")
+                    nome = row.get("Nome", "")
+                    st.write(f"Preenchendo: {matricula} - {nome}")
+                    
+                    # Simula tempo de preenchimento
+                    time.sleep(1)
 
-# Aqui você pode adicionar todas as funções do seu código original:
-# preencher_formulario(linha, page), processar_funcionario, enviar_foto_por_label, etc.
+                    # Atualiza barra de progresso
+                    progresso_bar.progress(int(((i + 1) / total) * 100))
 
-def preencher_formularios(df):
-    p = sync_playwright().start()
-    browser = p.chromium.launch(headless=False)
-    context = browser.new_context()
-    
-    log_text = ""
-    total = len(df)
-    
-    for i, (_, linha) in enumerate(df.iterrows()):
-        progresso = int(((i + 1) / total) * 100)
-        progress_bar.progress(progresso)
-        log_text += f"Processando registro {i+1}/{total}\n"
-        log(log_text)
-        
-        page = context.new_page()
-        try:
-            page.goto("https://example.com/form")  # substitua pelo FORM_URL
-            time.sleep(1)
-            # Chame sua função de preenchimento aqui
-            # preencher_formulario(linha, page)
-            log_text += f"✅ Aba {i+1} pronta\n"
-        except Exception as e:
-            log_text += f"❌ Erro no registro {i+1}: {e}\n"
-        log(log_text)
-    
-    progress_bar.progress(100)
-    log_text += "🚀 Processo concluído. Feche manualmente as abas abertas.\n"
-    log(log_text)
+                browser.close()
 
-# --- Botão de execução ---
-if st.button("Iniciar Preenchimento") and dados is not None:
-    st.warning("O navegador será aberto e cada registro criará uma nova aba. Não feche o navegador até o fim.")
-    preencher_formularios(dados)
+            st.success("Preenchimento concluído!")
